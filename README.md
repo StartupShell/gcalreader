@@ -46,4 +46,4 @@ to give the account at least the "Make changes to events" permission level.
 
 ### Booting
 
-Simply run `npm run start:local`!
+Simply run `npm run dev`!
