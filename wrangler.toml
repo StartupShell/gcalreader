@@ -1,5 +1,4 @@
 # Required secrets:
-# GOOGLE_CALENDAR_ID - the calendarId of the google calendar to place events on
 # GOOGLE_CREDENTIALS - base64 encoded service account credentials
 
 name = "gcalreader"
@@ -8,3 +7,6 @@ compatibility_date = "2023-01-13"
 kv_namespaces = [
     { binding = "CACHE", id = "4e30604368384fb1b10f477af92be2cf", preview_id = "84e208c60a7b403d91cc01e42df20f85" }
 ]
+
+[vars]
+GOOGLE_CALENDAR_ID = "c_cf94d3rg0gddvea9j43t191a98@group.calendar.google.com"
