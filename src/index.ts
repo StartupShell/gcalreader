@@ -3,9 +3,13 @@ import { Credentials, getAuthToken } from "web-auth-library/google"
 import { array, object, string } from "yup"
 import { DateTime } from "luxon"
 
+const CACHE_KEY = "cached_events"
+const CACHE_EXPIRE_AFTER_SEC = 60 * 60
+
 type Env = {
     GOOGLE_CALENDAR_ID: string
     GOOGLE_CREDENTIALS: string
+    CACHE: KVNamespace
 }
 type ListItem = {
     title: string
@@ -48,6 +52,13 @@ export default new Hono<{ Bindings: Env }>()
         return ctx.json({ error: "internal server error" }, 500)
     })
     .get("/list", async (ctx) => {
+        const cachedResult = await ctx.env.CACHE.get(CACHE_KEY)
+        if (cachedResult != null) {
+            return ctx.text(cachedResult, 200)
+        }
+
+        console.log("cache miss")
+
         const token = await createAuthToken(parseGoogleCredentials(ctx.env.GOOGLE_CREDENTIALS))
         const response = await fetch(
             `https://www.googleapis.com/calendar/v3/calendars/${ctx.env.GOOGLE_CALENDAR_ID}/events?maxResults=10`,
@@ -77,5 +88,6 @@ export default new Hono<{ Bindings: Env }>()
                 location: item.location,
             }
         })
+        await ctx.env.CACHE.put(CACHE_KEY, JSON.stringify(result), { expirationTtl: CACHE_EXPIRE_AFTER_SEC })
         return ctx.json(result, 200)
     })

@@ -5,3 +5,6 @@
 name = "gcalreader"
 main = "src/index.ts"
 compatibility_date = "2023-01-13"
+kv_namespaces = [
+    { binding = "CACHE", id = "4e30604368384fb1b10f477af92be2cf", preview_id = "84e208c60a7b403d91cc01e42df20f85" }
+]
