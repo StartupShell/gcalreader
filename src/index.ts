@@ -2,6 +2,7 @@ import { Hono } from "hono"
 import { Credentials, getAuthToken } from "web-auth-library/google"
 import { array, object, string } from "yup"
 import { DateTime } from "luxon"
+import { cors } from "hono/cors"
 
 const CACHE_KEY = "cached_events"
 const CACHE_EXPIRE_AFTER_SEC = 60 * 60
@@ -51,6 +52,7 @@ export default new Hono<{ Bindings: Env }>()
         console.error("uncaught error", err)
         return ctx.json({ error: "internal server error" }, 500)
     })
+    .use("*", cors())
     .get("/list", async (ctx) => {
         const cachedResult = await ctx.env.CACHE.get(CACHE_KEY)
         if (cachedResult != null) {
