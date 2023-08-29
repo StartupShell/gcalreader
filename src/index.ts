@@ -1,6 +1,6 @@
 import { Hono } from "hono"
 import { Credentials, getAuthToken } from "web-auth-library/google"
-import { array, object, string } from "yup"
+import { InferType, array, object, string } from "yup"
 import { DateTime } from "luxon"
 import { cors } from "hono/cors"
 
@@ -33,7 +33,7 @@ const gcalEventItem = object({
     location: string().optional(),
 })
 const gcalListSchema = object({
-    items: array(gcalEventItem).required(),
+    items: array().required(),
 })
 
 const parseGoogleCredentials = (raw: string): Credentials => {
@@ -65,8 +65,8 @@ export default new Hono<{ Bindings: Env }>()
         const params = new URLSearchParams({
             singleEvents: "true",
             showDeleted: "false",
-            maxResults: "10",
             timeMin: new Date().toISOString(),
+            orderBy: "startTime",
         })
         const response = await fetch(
             `https://www.googleapis.com/calendar/v3/calendars/${ctx.env.GOOGLE_CALENDAR_ID}/events?${params}`,
@@ -85,15 +85,24 @@ export default new Hono<{ Bindings: Env }>()
         }
 
         const responseJson = await response.json()
-        let body
+        let items
         try {
-            body = await gcalListSchema.validate(responseJson)
+            const body = await gcalListSchema.validate(responseJson)
+            const validatedItems = await Promise.allSettled(body.items.map((obj) => gcalEventItem.validate(obj)))
+            validatedItems
+                .filter(({ status }) => status == "rejected")
+                .forEach((rejected) => console.warn("failed to parse event item", rejected))
+
+            items = validatedItems
+                .filter(({ status }) => status == "fulfilled")
+                .map((result) => (result as PromiseFulfilledResult<InferType<typeof gcalEventItem>>).value)
         } catch (err) {
+            console.log(JSON.stringify(responseJson))
             console.error("failed to parse gcal response", responseJson, err)
             return ctx.json({ status: "failed to parse events from google" }, 500)
         }
 
-        const result: ListBody = body.items.map((item) => {
+        const result: ListBody = items.slice(0, 11).map((item) => {
             const startDate = DateTime.fromISO(item.start.dateTime, { zone: item.start.timeZone }).toJSDate()
             const endDate = DateTime.fromISO(item.end.dateTime, { zone: item.end.timeZone }).toJSDate()
             return {
