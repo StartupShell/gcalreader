@@ -61,13 +61,17 @@ export default new Hono<{ Bindings: Env }>()
 
         console.log("cache miss")
 
-        const token = await createAuthToken(parseGoogleCredentials(ctx.env.GOOGLE_CREDENTIALS))
+        const timeMin = DateTime.now()
+        const timeMax = timeMin.plus({ month: 1 })
         const params = new URLSearchParams({
             singleEvents: "true",
             showDeleted: "false",
-            timeMin: new Date().toISOString(),
+            timeMin: timeMin.toISO() as string,
+            timeMax: timeMax.toISO() as string,
             orderBy: "startTime",
         })
+
+        const token = await createAuthToken(parseGoogleCredentials(ctx.env.GOOGLE_CREDENTIALS))
         const response = await fetch(
             `https://www.googleapis.com/calendar/v3/calendars/${ctx.env.GOOGLE_CALENDAR_ID}/events?${params}`,
             {
@@ -102,7 +106,7 @@ export default new Hono<{ Bindings: Env }>()
             return ctx.json({ status: "failed to parse events from google" }, 500)
         }
 
-        const result: ListBody = items.slice(0, 11).map((item) => {
+        const result: ListBody = items.map((item) => {
             const startDate = DateTime.fromISO(item.start.dateTime, { zone: item.start.timeZone }).toJSDate()
             const endDate = DateTime.fromISO(item.end.dateTime, { zone: item.end.timeZone }).toJSDate()
             return {
