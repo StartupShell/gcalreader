@@ -61,7 +61,7 @@ export default new Hono<{ Bindings: Env }>()
 
         console.log("cache miss")
 
-        const timeMin = DateTime.now().startOf("day")
+        const timeMin = DateTime.now()
         const timeMax = timeMin.plus({ month: 1 })
         const params = new URLSearchParams({
             singleEvents: "true",
